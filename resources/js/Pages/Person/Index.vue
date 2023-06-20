@@ -2,33 +2,94 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { router, useForm } from '@inertiajs/vue3'
 import ModalPerson from '../../Components/ModalPerson.vue'
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import Swal from 'sweetalert2'
 
 defineProps({
-    people: { type: Object }
+    people: { type: Array, default: () => [] }
 })
 
+const processing = ref(false)
 const modal = ref(false)
-let op = ref(-1)
+
+const initialStatePerson = {
+    identification: '',
+    first_name: '',
+    last_name: '',
+    birthdate: '',
+    phone: '',
+    civil_status: '',
+    latitude: '',
+    longitude: ''
+}
+
+const person = reactive({ ...initialStatePerson })
+const errorPerson = reactive({ ...initialStatePerson })
+
+const resetForm = () => {
+    Object.assign(person, initialStatePerson)
+}
+const resetFormError = () => {
+    Object.assign(errorPerson, initialStatePerson)
+}
+
+const save = () => {
+    processing.value = true
+
+    if (person.id === undefined) {
+        axios
+            .post(route('people.store'), person)
+            .then(() => {
+                processing.value = false
+
+                toggle()
+                resetForm()
+                router.reload()
+            })
+            .catch(error => {
+                processing.value = false
+
+                Object.keys(error.response.data.errors).forEach(key => {
+                    errorPerson[key] = error.response.data.errors[key][0]
+                })
+            })
+    } else {
+        form.put(route('people.update', person.id), person)
+            .then(() => {
+                processing.value = false
+
+                toggle()
+                resetForm()
+                router.reload()
+            })
+            .catch(error => {
+                processing.value = false
+
+                Object.keys(error.response.data.errors).forEach(key => {
+                    errorPerson[key] = error.response.data.errors[key][0]
+                })
+            })
+    }
+}
 
 const form = useForm({})
 
-const openModal = opValue => {
-    op = opValue
+const toggle = () => {
+    modal.value = !modal.value
+}
+
+const openModal = () => {
+    resetForm()
+    resetFormError()
+    modal.value = !modal.value
+}
+
+const editar = per => {
+    Object.keys(per).forEach(key => {
+        person[key] = per[key]
+    })
     modal.value = true
 }
-
-const closeModal = () => {
-    op = -1
-    modal.value = false
-}
-
-const confirmed = () => {
-    router.reload()
-}
-
-const editar = () => {}
 
 const eliminar = (id, name) => {
     const swal = Swal.mixin({
@@ -56,7 +117,7 @@ const eliminar = (id, name) => {
             <div class="container mx-auto bg-white w-full flex">
                 <h1><i class="fa fa-users"></i> Personas</h1>
                 <button
-                    @click="openModal(0)"
+                    @click="openModal"
                     class="ml-2 h-8 px-3 rounded bg-green-500 text-white"
                 >
                     <i class="fa-solid fa-circle-plus"></i> Añadir
@@ -68,36 +129,69 @@ const eliminar = (id, name) => {
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     <div class="p-4">
-                        <table class="w-full table-auto border-collapse border border-gray-300">
+                        <table
+                            class="w-full table-auto border-collapse border border-gray-300"
+                        >
                             <thead>
                                 <tr>
-                                    <th class="border border-gray-300">Apellido</th>
-                                    <th class="border border-gray-300">Nombre</th>
-                                    <th class="border border-gray-300">Fecha nacimiento</th>
-                                    <th class="border border-gray-300">Celular</th>
-                                    <th class="border border-gray-300">Estado Civil</th>
-                                    <th class="border border-gray-300">JUbicación</th>
-                                    <th class="border border-gray-300">Acción</th>
+                                    <th class="border border-gray-300">
+                                        Apellido
+                                    </th>
+                                    <th class="border border-gray-300">
+                                        Nombre
+                                    </th>
+                                    <th class="border border-gray-300">
+                                        Fecha nacimiento
+                                    </th>
+                                    <th class="border border-gray-300">
+                                        Celular
+                                    </th>
+                                    <th class="border border-gray-300">
+                                        Estado Civil
+                                    </th>
+                                    <th class="border border-gray-300">
+                                        JUbicación
+                                    </th>
+                                    <th class="border border-gray-300">
+                                        Acción
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr
-                                    v-for="(person, i) in people"
-                                    :key="person.id"
-                                >
-                                    <td class="border border-gray-300 p-1">{{ person.last_name }}</td>
-                                    <td class="border border-gray-300 p-1">{{ person.first_name }}</td>
-                                    <td class="border border-gray-300 p-1 text-center">{{ person.birthdate }}</td>
-                                    <td class="border border-gray-300 p-1 text-center">{{ person.phone }}</td>
-                                    <td class="border border-gray-300 p-1 text-center">{{ person.civil_status }}</td>
-                                    <td class="border border-gray-300 p-1 text-center">
+                                <tr v-for="(item, i) in people" :key="item.id">
+                                    <td class="border border-gray-300 p-1">
+                                        {{ item.last_name }}
+                                    </td>
+                                    <td class="border border-gray-300 p-1">
+                                        {{ item.first_name }}
+                                    </td>
+                                    <td
+                                        class="border border-gray-300 p-1 text-center"
+                                    >
+                                        {{ item.birthdate }}
+                                    </td>
+                                    <td
+                                        class="border border-gray-300 p-1 text-center"
+                                    >
+                                        {{ item.phone }}
+                                    </td>
+                                    <td
+                                        class="border border-gray-300 p-1 text-center"
+                                    >
+                                        {{ item.civil_status }}
+                                    </td>
+                                    <td
+                                        class="border border-gray-300 p-1 text-center"
+                                    >
                                         {{
-                                            `${person.latitude}, ${person.longitude}`
+                                            `${item.latitude}, ${item.longitude}`
                                         }}
                                     </td>
-                                    <td class="border border-gray-300 p-1 text-center">
+                                    <td
+                                        class="border border-gray-300 p-1 text-center"
+                                    >
                                         <button
-                                            @click="openModal(person.id)"
+                                            @click="editar(item)"
                                             class="bg-yellow-500 py-1 px-2 text-white rounded"
                                         >
                                             <i class="fa-solid fa-edit"></i>
@@ -105,8 +199,8 @@ const eliminar = (id, name) => {
                                         <button
                                             @click="
                                                 eliminar(
-                                                    person.id,
-                                                    person.first_name
+                                                    item.id,
+                                                    item.first_name
                                                 )
                                             "
                                             class="ml-1 bg-red-500 py-1 px-2 text-white rounded"
@@ -124,8 +218,9 @@ const eliminar = (id, name) => {
     </AppLayout>
     <ModalPerson
         :isOpen="modal"
-        :op="op"
-        @close="closeModal"
-        @confirmed="confirmed"
+        :person="person"
+        :errorPerson="errorPerson"
+        @close="toggle"
+        @save="save"
     ></ModalPerson>
 </template>

@@ -86,7 +86,8 @@ class PersonController extends Controller
      */
     public function update(Request $request, Person $person)
     {
-        $person->fill($request->input())->saveOrFail();
+        $person->update($request->all());
+        // $person->fill($request->input())->saveOrFail();
         return redirect('people');
     }
 
