@@ -44,7 +44,8 @@ const save = () => {
 
                 toggle()
                 resetForm()
-                router.reload()
+                console.log(person)
+                router.reload({ only: ['people'] })
             })
             .catch(error => {
                 processing.value = false
@@ -60,7 +61,7 @@ const save = () => {
 
                 toggle()
                 resetForm()
-                router.reload()
+                router.reload({ only: ['people'] })
             })
             .catch(error => {
                 processing.value = false
